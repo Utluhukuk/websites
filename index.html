@@ -187,6 +187,29 @@
         wizardModal: false,
         currentArticle: null,
         articles: typeof MAKALELER !== 'undefined' ? MAKALELER : [],
+        selectedCategory: 'Tümü',
+        articleSearch: '',
+        articleLimit: 6,
+
+        get filteredArticles() {
+          let list = this.articles;
+          if (this.selectedCategory !== 'Tümü') {
+            list = list.filter(a => a.kategori.toLowerCase().includes(this.selectedCategory.toLowerCase()));
+          }
+          if (this.articleSearch.trim() !== '') {
+            const q = this.articleSearch.toLowerCase().trim();
+            list = list.filter(a => a.baslik.toLowerCase().includes(q) || a.ozet.toLowerCase().includes(q) || a.kategori.toLowerCase().includes(q));
+          }
+          return list;
+        },
+
+        get visibleArticles() {
+          const filtered = this.filteredArticles;
+          if (this.selectedCategory !== 'Tümü' || this.articleSearch.trim() !== '') {
+            return filtered;
+          }
+          return filtered.slice(0, this.articleLimit);
+        },
         
         // İletişim Formu State
         formData: { name: '', phone: '', email: '', topic: '', message: '' },
@@ -941,10 +964,10 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       
       <!-- Başlık ve Makale Ekleme Sihirbazı Butonu -->
-      <div class="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6" data-aos="fade-up">
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6" data-aos="fade-up">
         <div>
           <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-gold-100 border border-gold-300 text-gold-800 text-xs font-semibold tracking-widest uppercase mb-3">
-            Hukuki Gündem & Makaleler
+            Hukuki Gündem & Makaleler (<span x-text="articles.length"></span> Yazı)
           </div>
           <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-navy-900">
             Güncel Bilgi ve İçtihat İncelemeleri
@@ -952,7 +975,7 @@
         </div>
         <div class="flex items-center gap-4">
           <p class="text-slate-500 text-sm max-w-sm hidden sm:block">
-            Avukatlarımızın güncel mevzuat ve Yargıtay kararları üzerine hazırladığı hukuki değerlendirmeler.
+            Avukatlarımızın güncel mevzuat ve Yargıtay kararları üzerine hazırladığı kapsamlı hukuki değerlendirmeler.
           </p>
           <!-- Yeni Makale Ekleme Sihirbazı Tetikleyici (Sadece ?admin=1 ile görünür) -->
           <button @click="wizardModal = true; generateArticleCode();"
@@ -967,9 +990,87 @@
         </div>
       </div>
 
+      <!-- Arama ve Kategori Filtreleri -->
+      <div class="mb-10 space-y-4" data-aos="fade-up">
+        <!-- Arama Çubuğu -->
+        <div class="relative max-w-md">
+          <input type="text"
+                 x-model="articleSearch"
+                 placeholder="Makale veya hukuki konu arayın (örn: boşanma, tahliye, kıdem)..."
+                 class="w-full pl-11 pr-4 py-3 rounded-xl bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-gold-500 focus:ring-2 focus:ring-gold-400/20 shadow-sm transition-all">
+          <svg class="w-5 h-5 text-slate-400 absolute left-3.5 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <button x-show="articleSearch.length > 0"
+                  @click="articleSearch = ''"
+                  class="absolute right-3 top-3 text-slate-400 hover:text-slate-600 text-xs px-1.5 py-0.5 rounded bg-slate-100">
+            Temizle
+          </button>
+        </div>
+
+        <!-- Kategori Butonları -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none text-xs font-medium">
+          <button @click="selectedCategory = 'Tümü'; articleLimit = 6;"
+                  :class="selectedCategory === 'Tümü' ? 'bg-navy-900 text-gold-400 shadow-md border-navy-900' : 'bg-white text-slate-600 hover:text-navy-900 hover:bg-slate-50 border-slate-200'"
+                  class="px-4 py-2 rounded-lg border transition-all shrink-0">
+            Tüm Makaleler (<span x-text="articles.length"></span>)
+          </button>
+          <button @click="selectedCategory = 'İcra'; articleLimit = 999;"
+                  :class="selectedCategory === 'İcra' ? 'bg-navy-900 text-gold-400 shadow-md border-navy-900' : 'bg-white text-slate-600 hover:text-navy-900 hover:bg-slate-50 border-slate-200'"
+                  class="px-4 py-2 rounded-lg border transition-all shrink-0">
+            İcra ve İflas
+          </button>
+          <button @click="selectedCategory = 'Kira'; articleLimit = 999;"
+                  :class="selectedCategory === 'Kira' ? 'bg-navy-900 text-gold-400 shadow-md border-navy-900' : 'bg-white text-slate-600 hover:text-navy-900 hover:bg-slate-50 border-slate-200'"
+                  class="px-4 py-2 rounded-lg border transition-all shrink-0">
+            Kira ve Gayrimenkul
+          </button>
+          <button @click="selectedCategory = 'İş'; articleLimit = 999;"
+                  :class="selectedCategory === 'İş' ? 'bg-navy-900 text-gold-400 shadow-md border-navy-900' : 'bg-white text-slate-600 hover:text-navy-900 hover:bg-slate-50 border-slate-200'"
+                  class="px-4 py-2 rounded-lg border transition-all shrink-0">
+            İş Hukuku
+          </button>
+          <button @click="selectedCategory = 'Aile'; articleLimit = 999;"
+                  :class="selectedCategory === 'Aile' ? 'bg-navy-900 text-gold-400 shadow-md border-navy-900' : 'bg-white text-slate-600 hover:text-navy-900 hover:bg-slate-50 border-slate-200'"
+                  class="px-4 py-2 rounded-lg border transition-all shrink-0">
+            Aile ve Boşanma
+          </button>
+          <button @click="selectedCategory = 'Miras'; articleLimit = 999;"
+                  :class="selectedCategory === 'Miras' ? 'bg-navy-900 text-gold-400 shadow-md border-navy-900' : 'bg-white text-slate-600 hover:text-navy-900 hover:bg-slate-50 border-slate-200'"
+                  class="px-4 py-2 rounded-lg border transition-all shrink-0">
+            Miras Hukuku
+          </button>
+          <button @click="selectedCategory = 'Ceza'; articleLimit = 999;"
+                  :class="selectedCategory === 'Ceza' ? 'bg-navy-900 text-gold-400 shadow-md border-navy-900' : 'bg-white text-slate-600 hover:text-navy-900 hover:bg-slate-50 border-slate-200'"
+                  class="px-4 py-2 rounded-lg border transition-all shrink-0">
+            Ceza Hukuku
+          </button>
+          <button @click="selectedCategory = 'Ticaret'; articleLimit = 999;"
+                  :class="selectedCategory === 'Ticaret' ? 'bg-navy-900 text-gold-400 shadow-md border-navy-900' : 'bg-white text-slate-600 hover:text-navy-900 hover:bg-slate-50 border-slate-200'"
+                  class="px-4 py-2 rounded-lg border transition-all shrink-0">
+            Ticaret ve Şirketler
+          </button>
+          <button @click="selectedCategory = 'Tüketici'; articleLimit = 999;"
+                  :class="selectedCategory === 'Tüketici' ? 'bg-navy-900 text-gold-400 shadow-md border-navy-900' : 'bg-white text-slate-600 hover:text-navy-900 hover:bg-slate-50 border-slate-200'"
+                  class="px-4 py-2 rounded-lg border transition-all shrink-0">
+            Tüketici Hukuku
+          </button>
+          <button @click="selectedCategory = 'Bilişim'; articleLimit = 999;"
+                  :class="selectedCategory === 'Bilişim' ? 'bg-navy-900 text-gold-400 shadow-md border-navy-900' : 'bg-white text-slate-600 hover:text-navy-900 hover:bg-slate-50 border-slate-200'"
+                  class="px-4 py-2 rounded-lg border transition-all shrink-0">
+            Bilişim ve KVKK
+          </button>
+          <button @click="selectedCategory = 'Tazminat'; articleLimit = 999;"
+                  :class="selectedCategory === 'Tazminat' ? 'bg-navy-900 text-gold-400 shadow-md border-navy-900' : 'bg-white text-slate-600 hover:text-navy-900 hover:bg-slate-50 border-slate-200'"
+                  class="px-4 py-2 rounded-lg border transition-all shrink-0">
+            Tazminat & Araç Değer Kaybı
+          </button>
+        </div>
+      </div>
+
       <!-- Dinamik Makale Kartları (Alpine.js Döngüsü) -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <template x-for="makale in articles" :key="makale.id">
+        <template x-for="makale in visibleArticles" :key="makale.id">
           <article @click="openArticle(makale)"
                    class="group bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-sm hover:shadow-card-hover hover:-translate-y-2 transition-all duration-300 flex flex-col justify-between cursor-pointer"
                    data-aos="fade-up">
@@ -1008,6 +1109,42 @@
               <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
             </div>
           </article>
+        </template>
+      </div>
+
+      <!-- Arama Sonucu Bulunamadı -->
+      <div x-show="filteredArticles.length === 0"
+           class="text-center py-12 bg-white rounded-2xl border border-slate-200 p-8 my-6">
+        <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <h4 class="font-serif text-lg font-bold text-navy-900 mb-1">Aramanıza Uygun Makale Bulunamadı</h4>
+        <p class="text-xs text-slate-500 mb-4">Lütfen farklı bir anahtar kelime deneyin veya filtreleri sıfırlayın.</p>
+        <button @click="articleSearch = ''; selectedCategory = 'Tümü';"
+                class="px-4 py-2 rounded-lg text-xs font-semibold bg-navy-900 text-gold-400 hover:bg-gold-500 hover:text-navy-950 transition-colors">
+          Filtreleri Temizle
+        </button>
+      </div>
+
+      <!-- Daha Fazla Göster / Daha Az Göster Butonu -->
+      <div class="mt-12 text-center" x-show="selectedCategory === 'Tümü' && articleSearch.trim() === ''">
+        <template x-if="visibleArticles.length < filteredArticles.length">
+          <button @click="articleLimit = 999"
+                  class="px-8 py-3.5 rounded-xl text-xs font-semibold tracking-wider uppercase text-navy-950 bg-white border border-gold-400 hover:bg-gold-50 hover:border-gold-500 shadow-sm transition-all duration-300 inline-flex items-center gap-2">
+            <span>Tüm Makaleleri Göster (<span x-text="filteredArticles.length - visibleArticles.length"></span> Yazı Daha)</span>
+            <svg class="w-4 h-4 text-gold-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+        </template>
+        <template x-if="articleLimit > 6 && visibleArticles.length >= filteredArticles.length && filteredArticles.length > 6">
+          <button @click="articleLimit = 6; document.getElementById('makaleler').scrollIntoView({behavior: 'smooth'})"
+                  class="px-8 py-3.5 rounded-xl text-xs font-semibold tracking-wider uppercase text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 shadow-sm transition-all duration-300 inline-flex items-center gap-2">
+            <span>Daha Az Göster</span>
+            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+            </svg>
+          </button>
         </template>
       </div>
 
